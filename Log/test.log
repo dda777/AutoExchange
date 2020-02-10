@@ -1,0 +1,6 @@
+20200121;10:52:53;adm;C;Distr;DistUplBeg;1;\\srvglobal\user\db.adm\tr5\CP\GLB04YM.zip;;
+20200121;10:52:53;adm;C;Distr;DistUplErr;5;Не могу открыть файл: \\srvglobal\user\db.adm\tr5\CP\GLB04YM.zip;;
+20200121;10:52:53;adm;C;Distr;DistUplFail;1;;;
+20200121;10:52:54;adm;C;Distr;DistDnldBeg;1;Код ИБ: 'REK', Файл: '\\srvglobal\user\db.adm\tr5\PC\GLB14YL.zip';;
+20200121;10:52:54;adm;C;Distr;DistDnlErr;5;Нет возможности создать файл  \\srvglobal\user\db.adm\tr5\PC\GLB14YL.zip;;
+20200121;10:52:54;adm;C;Distr;DistDnldFail;1;;;
