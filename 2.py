@@ -10,22 +10,57 @@
 # # c = requests.post('https://help.tavriav.com.ua/sdpapi/admin/supportgroup', z)
 # # print(c.content)
 # # print(c)
-from PyQt5 import QtCore, QtGui, QtWidgets
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 
-class Window(QtWidgets.QWidget):
+import sys
+from PyQt5.QtWidgets import (QPushButton, QWidget,
+    QLineEdit, QApplication)
+
+class Button(QPushButton):
+
+    def __init__(self, title, parent):
+        super().__init__(title, parent)
+
+        self.setAcceptDrops(True)
+
+
+    def dragEnterEvent(self, e):
+
+        if e.mimeData().hasFormat('text/plain'):
+            e.accept()
+        else:
+            e.ignore()
+
+    def dropEvent(self, e):
+
+        self.setText(e.mimeData().text())
+
+
+class Example(QWidget):
+
     def __init__(self):
-        super(Window, self).__init__()
-        self.setMouseTracking(True)
+        super().__init__()
 
-    def mouseMoveEvent(self, event):
-        if event.buttons() & QtCore.Qt.LeftButton:
-            print(event.globalPos().x(), event.globalPos().y())
+        self.initUI()
+
+
+    def initUI(self):
+
+        edit = QLineEdit('', self)
+        edit.setDragEnabled(True)
+        edit.move(30, 65)
+
+        button = Button("Button", self)
+        button.move(190, 65)
+
+        self.setWindowTitle('Simple drag & drop')
+        self.setGeometry(300, 300, 300, 150)
+
 
 if __name__ == '__main__':
 
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    window = Window()
-    window.setGeometry(500, 150, 100, 100)
-    window.show()
-    sys.exit(app.exec_())
+    app = QApplication(sys.argv)
+    ex = Example()
+    ex.show()
+    app.exec_()

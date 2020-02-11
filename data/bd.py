@@ -1,45 +1,38 @@
-import MySQLdb
-from config import BDProperties
+from PyQt5 import QtSql
 
 
-class DataBase(BDProperties):
-
+class MyQSqlDatabase(QtSql.QSqlDatabase):
     def __init__(self):
-        BDProperties.__init__(self)
-        try:
-            self.conn = MySQLdb.connect(
-                user=self.getUserName(),
-                password=self.getPassword(),
-                host=self.getHost(),
-                database=self.getDataBase(),
-                charset='utf8')
-        except:
-            print('Все плохо')
+        QtSql.QSqlDatabase.__init__(self)
+        self.conn = self.addDatabase('QSQLITE')
+        self.conn.setDatabaseName('data/autoexchange')
+        if not self.conn.open():
+            print('Нет подключения к бд')
+        else: print('Подключение установлено')
+        self.query = QtSql.QSqlQuery()
 
-    def getObjName(self, param=''):
-        data = []
+    def __del__(self):
+        self.conn.close()
 
-        sql = "SELECT ExchangeData_ObjName FROM exchangedata WHERE objectclass_id = (SELECT objectclass_id FROM objectclass WHERE ObjectClass_Name = '" +param+"')"
-        try:
-            cursor = self.conn.cursor()
-            cursor.execute(sql)
-            for row in cursor.fetchall():
-                data.append(row[0])
-            return data
+    def get_obj_name(self, param):
+        lst = []
+        self.query.exec(
+            f'SELECT ExchangeData_ObjName FROM exchangedata WHERE objectclass_id = (SELECT objectclass_id FROM objectclass WHERE ObjectClass_Name = "{param}")')
+        if self.query.isActive():
+            self.query.first()
+            while self.query.isValid():
+                lst.append(self.query.value('ExchangeData_ObjName'))
+                self.query.next()
+        else:
+            print('Нет конекта')
+        return lst
 
-        except:
-            return print('Все плохо')
-
-    def getObjClassName(self, param='ObjectClass_Name'):
-        data = []
-
-        sql = "SELECT " + param + " FROM ObjectClass"
-        try:
-            cursor = self.conn.cursor()
-            cursor.execute(sql)
-            for row in cursor.fetchall():
-                data.append(row[0])
-            return data
-
-        except:
-            return print('Все плохо')
+    def get_obj_class_name(self):
+        lst = []
+        self.query.exec('SELECT ObjectClass_Name FROM ObjectClass')
+        if self.query.isActive():
+            self.query.first()
+            while self.query.isValid():
+                lst.append(self.query.value('ObjectClass_Name'))
+                self.query.next()
+        return lst

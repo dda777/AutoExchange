@@ -1,48 +1,59 @@
 # -*- coding: cp1251 -*-
-import tempfile, os, sys
-from view.main import Ui_MainWindow
-from data.bd import DataBase
-from PyQt5 import QtCore, QtWidgets, QtGui, uic
+import sys
+from view.main import Ui_Form
+from data.bd import MyQSqlDatabase
+from PyQt5 import QtCore, QtWidgets, QtGui
 
 
-class UserData(QtWidgets.QMainWindow, Ui_MainWindow):
+class MainView(QtWidgets.QMainWindow, Ui_Form):
     def __init__(self):
         QtWidgets.QMainWindow.__init__(self, parent=None)
-        self.db = DataBase()
+        self.setupUi()
         self.model = TreeModel()
-        self.setupUi(self)
-        self.cbo = self.listWidget
-        self.pushButton.clicked.connect(self.on_clicked)
+        self.listView = MyListEvent()
 
-        self.treeWidget.setModel(self.model.add_data())
+        self.treeView.setModel(self.model.add_data())
 
 
 
-    def on_clicked(self, index: QtCore.QModelIndex):
-        c = QtCore.QModelIndex()
-        return print(c.data())
-
-
-class TreeModel(QtGui.QStandardItemModel):
+class TreeModel(QtGui.QStandardItemModel, MyQSqlDatabase):
     def __init__(self):
-        self.db = DataBase()
         QtGui.QStandardItemModel.__init__(self)
+        MyQSqlDatabase.__init__(self)
+
     def add_data(self):
         sti = QtGui.QStandardItemModel()
-        for i in self.db.getObjClassName():
+        for i in self.get_obj_class_name():
             root_item = QtGui.QStandardItem(i)
             root_item.setFlags(root_item.flags() & ~QtCore.Qt.ItemIsDragEnabled & ~QtCore.Qt.ItemIsDropEnabled)
-            for q in self.db.getObjName(i):
+            for q in self.get_obj_name(i):
                 item = QtGui.QStandardItem(q)
                 root_item.appendRow(item)
             sti.appendRow([root_item])
         return sti
 
 
+class MyListEvent(QtWidgets.QListView):
+    def __init__(self):
+        QtWidgets.QListView.__init__(self)
+        self.setAcceptDrops(True)
+
+    def dragEnterEvent(self, e):
+
+        if e.mimeData().hasFormat('text/plain'):
+            e.accept()
+        else:
+            e.ignore()
+
+    def dropEvent(self, e):
+
+        self.setText(e.mimeData().text())
+
+
 
 
 app = QtWidgets.QApplication(sys.argv)
-application = UserData()
+application = MainView()
 application.show()
 sys.exit(app.exec())
 

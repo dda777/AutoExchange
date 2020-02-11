@@ -2,63 +2,68 @@
 
 # Form implementation generated from reading ui file 'main.ui'
 #
-# Created by: PyQt5 UI code generator 5.14.0
+# Created by: PyQt5 UI code generator 5.14.1
 #
 # WARNING! All changes made in this file will be lost!
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+class Button(QtWidgets.QPushButton):
 
-class Ui_MainWindow(object):
-    def setupUi(self, MainWindow):
-        MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(859, 662)
-        self.centralwidget = QtWidgets.QWidget(MainWindow)
-        self.centralwidget.setObjectName("centralwidget")
-        self.tabWidget = QtWidgets.QTabWidget(self.centralwidget)
-        self.tabWidget.setGeometry(QtCore.QRect(0, -2, 845, 648))
+    def __init__(self):
+        super().__init__()
+
+        self.setAcceptDrops(True)
+
+
+    def dragEnterEvent(self, e):
+
+        if e.mimeData().hasFormat('text/plain'):
+            e.accept()
+        else:
+            e.ignore()
+
+    def dropEvent(self, e):
+
+        self.setText(e.mimeData().text())
+
+class Ui_Form(object):
+    def setupUi(self):
+        self.tabWidget = QtWidgets.QTabWidget()
+        self.tabWidget.setGeometry(QtCore.QRect(-1, -2, 845, 648))
         self.tabWidget.setMinimumSize(QtCore.QSize(641, 421))
         self.tabWidget.setMaximumSize(QtCore.QSize(845, 648))
         self.tabWidget.setObjectName("tabWidget")
         self.tab = QtWidgets.QWidget()
         self.tab.setObjectName("tab")
-        self.pushButton = QtWidgets.QPushButton(self.tab)
-        self.pushButton.setGeometry(QtCore.QRect(690, 480, 91, 41))
-        self.pushButton.setObjectName("pushButton")
-        self.treeWidget = QtWidgets.QTreeView(self.tab)
-        self.treeWidget.setGeometry(QtCore.QRect(30, 50, 271, 471))
-        self.treeWidget.setTabKeyNavigation(False)
-        self.treeWidget.setProperty("showDropIndicator", True)
-        self.treeWidget.setDragEnabled(True)
-        self.treeWidget.setDragDropOverwriteMode(False)
-        self.treeWidget.setDragDropMode(QtWidgets.QAbstractItemView.DragOnly)
-        self.treeWidget.setDefaultDropAction(QtCore.Qt.LinkAction)
-        self.treeWidget.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
-        self.treeWidget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
-        self.treeWidget.setAutoExpandDelay(0)
-        self.treeWidget.setIndentation(20)
-        self.treeWidget.setUniformRowHeights(False)
-        self.treeWidget.setObjectName("treeWidget")
-        self.treeWidget.header().setVisible(False)
-        self.treeWidget.header().setCascadingSectionResizes(False)
-        self.treeWidget.header().setDefaultSectionSize(100)
-        self.treeWidget.header().setHighlightSections(True)
-        self.treeWidget.header().setMinimumSectionSize(100)
-        self.treeWidget.header().setSortIndicatorShown(False)
-        self.treeWidget.header().setStretchLastSection(True)
-        self.listWidget = QtWidgets.QListWidget(self.tab)
-        self.listWidget.setGeometry(QtCore.QRect(420, 50, 221, 471))
-        self.listWidget.setAutoScroll(True)
-        self.listWidget.setProperty("showDropIndicator", True)
-        self.listWidget.setDragEnabled(True)
-        self.listWidget.setDragDropOverwriteMode(True)
-        self.listWidget.setDragDropMode(QtWidgets.QAbstractItemView.DragDrop)
-        self.listWidget.setDefaultDropAction(QtCore.Qt.MoveAction)
-        self.listWidget.setTextElideMode(QtCore.Qt.ElideLeft)
-        self.listWidget.setFlow(QtWidgets.QListView.TopToBottom)
-        self.listWidget.setUniformItemSizes(False)
-        self.listWidget.setObjectName("listWidget")
+        self.treeView = QtWidgets.QTreeView(self.tab)
+        self.treeView.setGeometry(QtCore.QRect(30, 50, 271, 471))
+        self.treeView.setTabKeyNavigation(False)
+        self.treeView.setProperty("showDropIndicator", True)
+        self.treeView.setDragEnabled(True)
+        self.treeView.setDragDropOverwriteMode(False)
+        self.treeView.setDragDropMode(QtWidgets.QAbstractItemView.DragOnly)
+        self.treeView.setDefaultDropAction(QtCore.Qt.LinkAction)
+        self.treeView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.treeView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.treeView.setAutoExpandDelay(0)
+        self.treeView.setIndentation(20)
+        self.treeView.setUniformRowHeights(False)
+        self.treeView.setObjectName("treeView")
+        self.treeView.header().setVisible(False)
+        self.listView = QtWidgets.QListView(self.tab)
+        self.listView.setGeometry(QtCore.QRect(420, 50, 221, 471))
+        self.listView.setAutoScroll(True)
+        self.listView.setProperty("showDropIndicator", True)
+        self.listView.setDragEnabled(True)
+        self.listView.setDragDropOverwriteMode(True)
+        self.listView.setDragDropMode(QtWidgets.QAbstractItemView.DragDrop)
+        self.listView.setDefaultDropAction(QtCore.Qt.MoveAction)
+        self.listView.setTextElideMode(QtCore.Qt.ElideLeft)
+        self.listView.setFlow(QtWidgets.QListView.TopToBottom)
+        self.listView.setUniformItemSizes(False)
+        self.listView.setObjectName("listView")
         self.checkBox = QtWidgets.QCheckBox(self.tab)
         self.checkBox.setEnabled(False)
         self.checkBox.setGeometry(QtCore.QRect(680, 50, 111, 31))
@@ -205,42 +210,37 @@ class Ui_MainWindow(object):
         self.listWidget_3.setUniformItemSizes(False)
         self.listWidget_3.setObjectName("listWidget_3")
         self.tabWidget.addTab(self.tab_3, "")
-        MainWindow.setCentralWidget(self.centralwidget)
-        self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 859, 21))
-        self.menubar.setObjectName("menubar")
-        MainWindow.setMenuBar(self.menubar)
-        self.statusbar = QtWidgets.QStatusBar(MainWindow)
-        self.statusbar.setObjectName("statusbar")
-        MainWindow.setStatusBar(self.statusbar)
+        self.pushButton = Button()
+        self.pushButton.setGeometry(QtCore.QRect(730, 690, 91, 41))
+        self.pushButton.setObjectName("pushButton")
 
-        self.retranslateUi(MainWindow)
+
         self.tabWidget.setCurrentIndex(0)
-        QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
-    def retranslateUi(self, MainWindow):
+
+    def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.pushButton.setText(_translate("MainWindow", "Сделать Авто"))
-        self.checkBox.setText(_translate("MainWindow", "Монопольно?"))
-        self.pushButton_2.setText(_translate("MainWindow", ">>"))
-        self.pushButton_5.setText(_translate("MainWindow", "<<"))
-        self.label.setText(_translate("MainWindow", "Выбранные магазины :"))
-        self.label_6.setText(_translate("MainWindow", "Все магазины :"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MainWindow", "Главная -> Локальная"))
-        self.checkBox_6.setText(_translate("MainWindow", "Монопольно?"))
-        self.pushButton_22.setText(_translate("MainWindow", "Сделать Авто"))
-        self.label_3.setText(_translate("MainWindow", "Выбранные магазины :"))
-        self.pushButton_9.setText(_translate("MainWindow", ">>"))
-        self.pushButton_11.setText(_translate("MainWindow", "<<"))
-        self.label_7.setText(_translate("MainWindow", "Все магазины :"))
-        self.treeWidget_6.headerItem().setText(0, _translate("MainWindow", "Text"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "Локальная -> Главная"))
-        self.checkBox_3.setText(_translate("MainWindow", "Монопольно?"))
-        self.pushButton_13.setText(_translate("MainWindow", "Сделать Авто"))
-        self.label_4.setText(_translate("MainWindow", "Выбранные магазины :"))
-        self.pushButton_12.setText(_translate("MainWindow", ">>"))
-        self.pushButton_14.setText(_translate("MainWindow", "<<"))
-        self.label_5.setText(_translate("MainWindow", "Все магазины :"))
-        self.treeWidget_3.headerItem().setText(0, _translate("MainWindow", "Text"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("MainWindow", "Полный круг"))
+        Form.setWindowTitle(_translate("Form", "Form"))
+        self.checkBox.setText(_translate("Form", "Монопольно?"))
+        self.pushButton_2.setText(_translate("Form", ">>"))
+        self.pushButton_5.setText(_translate("Form", "<<"))
+        self.label.setText(_translate("Form", "Выбранные магазины :"))
+        self.label_6.setText(_translate("Form", "Все магазины :"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("Form", "Главная -> Локальная"))
+        self.checkBox_6.setText(_translate("Form", "Монопольно?"))
+        self.pushButton_22.setText(_translate("Form", "Сделать Авто"))
+        self.label_3.setText(_translate("Form", "Выбранные магазины :"))
+        self.pushButton_9.setText(_translate("Form", ">>"))
+        self.pushButton_11.setText(_translate("Form", "<<"))
+        self.label_7.setText(_translate("Form", "Все магазины :"))
+        self.treeWidget_6.headerItem().setText(0, _translate("Form", "Text"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("Form", "Локальная -> Главная"))
+        self.checkBox_3.setText(_translate("Form", "Монопольно?"))
+        self.pushButton_13.setText(_translate("Form", "Сделать Авто"))
+        self.label_4.setText(_translate("Form", "Выбранные магазины :"))
+        self.pushButton_12.setText(_translate("Form", ">>"))
+        self.pushButton_14.setText(_translate("Form", "<<"))
+        self.label_5.setText(_translate("Form", "Все магазины :"))
+        self.treeWidget_3.headerItem().setText(0, _translate("Form", "Text"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("Form", "Полный круг"))
+        self.pushButton.setText(_translate("Form", "Сделать Авто"))
