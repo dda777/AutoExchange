@@ -5,15 +5,88 @@ from data.bd import MyQSqlDatabase
 from PyQt5 import QtCore, QtWidgets, QtGui
 
 
-class MainView(QtWidgets.QMainWindow, Ui_Form):
+class MainView(QtWidgets.QWidget):
     def __init__(self):
-        QtWidgets.QMainWindow.__init__(self, parent=None)
-        self.setupUi()
-        self.model = TreeModel()
-        self.listView = MyListEvent()
+        QtWidgets.QWidget.__init__(self, parent=None)
+        self.resize(900, 600)
 
+        self.listView = MyListWidget()
+
+        self.treeView = QtWidgets.QTreeView()
+        self.treeView.setDragEnabled(True)
+        self.treeView.setUniformRowHeights(False)
+        self.treeView.setAutoExpandDelay(0)
+        self.treeView.setIndentation(20)
+        self.treeView.header().setVisible(False)
+        self.treeView.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+
+        self.pushButton_1 = QtWidgets.QPushButton()
+        self.pushButton_1.setText('Сделать Авто')
+        self.pushButton_1.clicked.connect(self.on_clicked)
+
+        self.pushButton_2 = QtWidgets.QPushButton()
+        self.pushButton_2.setText('>>')
+        self.pushButton_2.clicked.connect(self.on_clicked_add)
+
+        self.pushButton_3 = QtWidgets.QPushButton()
+        self.pushButton_3.setText('<<')
+        self.pushButton_3.clicked.connect(self.on_clicked_del)
+
+        self.vbox = QtWidgets.QGridLayout()
+        self.vbox.setSpacing(10)
+        self.vbox.setColumnStretch(1, 2)
+        self.vbox.setColumnStretch(3, 2)
+        self.vbox.addWidget(self.treeView, 1, 1, 4, 1)
+        self.vbox.addWidget(self.listView, 1, 3, 4, 1)
+        self.vbox.addWidget(self.pushButton_2, 1, 2, 2, 1)
+        self.vbox.addWidget(self.pushButton_3, 2, 2, 2, 1)
+        self.vbox.addWidget(self.pushButton_1, 4, 4)
+        self.setLayout(self.vbox)
+        self.setWindowTitle('Автообмен')
+        self.model = TreeModel()
         self.treeView.setModel(self.model.add_data())
 
+    def on_clicked_add(self):
+        if self.treeView.selectedIndexes():
+            for i in range(0, self.treeView.model().rowCount(self.treeView.rootIndex())):
+                root = self.treeView.model().index(i, 0, QtCore.QModelIndex())
+                if self.treeView.model().index(i, 0, QtCore.QModelIndex()) in self.treeView.selectedIndexes():
+                    for j in range(0, self.treeView.model().rowCount(root)):
+                        text = self.treeView.model().data(self.treeView.model().index(j, 0, root))
+                        item = QtWidgets.QListWidgetItem(text)
+                        if self.listView.findItems(text, QtCore.Qt.MatchContains):
+                            print('эелемент уже есть в списке', text)  # Нужно сделать алерт!
+                        else:
+                            self.listView.addItem(item)
+                else:
+                    for j in range(0, self.treeView.model().rowCount(root)):
+                        if self.treeView.model().index(j, 0, root) in self.treeView.selectedIndexes():
+                            text = self.treeView.model().data(self.treeView.model().index(j, 0, root))
+                            item = QtWidgets.QListWidgetItem(text)
+                            if self.listView.findItems(text, QtCore.Qt.MatchContains):
+                                print('эелемент уже есть в списке', text)  # Нужно сделать алерт!
+                            else:
+                                self.listView.addItem(item)
+
+        else:
+            for i in range(0, self.treeView.model().rowCount(self.treeView.rootIndex())):
+                root = self.treeView.model().index(i, 0, QtCore.QModelIndex())
+                for j in range(0, self.treeView.model().rowCount(root)):
+                    text = self.treeView.model().data(self.treeView.model().index(j, 0, root))
+                    item = QtWidgets.QListWidgetItem(text)
+                    if self.listView.findItems(text, QtCore.Qt.MatchContains):
+                        print('эелемент уже есть в списке', text)  # Нужно сделать алерт!
+                    else:
+                        self.listView.addItem(item)
+
+    def on_clicked_del(self):
+        listitems = self.listView.selectedItems()
+        if not listitems: self.listView.clear()
+        for item in listitems:
+            self.listView.takeItem(self.listView.row(item))
+
+    def on_clicked(self):
+        pass
 
 
 class TreeModel(QtGui.QStandardItemModel, MyQSqlDatabase):
@@ -33,23 +106,42 @@ class TreeModel(QtGui.QStandardItemModel, MyQSqlDatabase):
         return sti
 
 
-class MyListEvent(QtWidgets.QListView):
+class MyListWidget(QtWidgets.QListWidget):
+
     def __init__(self):
-        QtWidgets.QListView.__init__(self)
+        super().__init__()
         self.setAcceptDrops(True)
+        self.setAutoScroll(True)
+        self.setProperty("showDropIndicator", True)
+        self.setDragEnabled(True)
+        self.setDragDropOverwriteMode(True)
+        self.setDragDropMode(QtWidgets.QAbstractItemView.DragDrop)
+        self.setSelectionMode(QtWidgets.QAbstractItemView.ContiguousSelection)
+        self.setDefaultDropAction(QtCore.Qt.MoveAction)
+        self.setTextElideMode(QtCore.Qt.ElideLeft)
+        self.setFlow(QtWidgets.QListView.TopToBottom)
+        self.setUniformItemSizes(False)
+        self.setObjectName("listWidget")
 
-    def dragEnterEvent(self, e):
-
-        if e.mimeData().hasFormat('text/plain'):
-            e.accept()
+    def dragMoveEvent(self, QDragMoveEvent):
+        if QDragMoveEvent.mimeData().hasFormat('application/x-qabstractitemmodeldatalist'):
+            QDragMoveEvent.setDropAction(QtCore.Qt.MoveAction)
+            QDragMoveEvent.accept()
         else:
-            e.ignore()
+            QDragMoveEvent.ignore()
 
-    def dropEvent(self, e):
+    def dropEvent(self, event):
+        if self.viewport().rect().contains(event.pos()):
+            fake_model = QtGui.QStandardItemModel()
+            fake_model.dropMimeData(event.mimeData(), event.dropAction(), 0, 0, QtCore.QModelIndex())
+            if self.count() > 0:
+                if self.findItems(fake_model.item(0, 0).text(), QtCore.Qt.MatchContains):
+                    return  # добавить алерт
+        super(MyListWidget, self).dropEvent(event)
 
-        self.setText(e.mimeData().text())
+    def add_item_list(self):
 
-
+        pass
 
 
 app = QtWidgets.QApplication(sys.argv)
