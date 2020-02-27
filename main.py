@@ -1,13 +1,18 @@
 # -*- coding: cp1251 -*-
-import sys
-from view.main import Ui_Form
 from data.bd import MyQSqlDatabase
-from PyQt5 import QtCore, QtWidgets, QtGui
+from PyQt5 import QtCore, QtWidgets, QtGui, QtSql
+import socket
+import pickle
+import asyncio
+from socket import *
+import sys
+import getpass
 
 
-class MainView(QtWidgets.QWidget):
+class MainView(QtWidgets.QWidget, MyQSqlDatabase):
     def __init__(self):
         QtWidgets.QWidget.__init__(self, parent=None)
+        MyQSqlDatabase.__init__(self)
         self.resize(900, 600)
 
         self.listView = MyListWidget()
@@ -22,7 +27,8 @@ class MainView(QtWidgets.QWidget):
 
         self.pushButton_1 = QtWidgets.QPushButton()
         self.pushButton_1.setText('Сделать Авто')
-        self.pushButton_1.clicked.connect(self.on_clicked)
+        # self.pushButton_1.clicked.connect(self.on_clicked)
+        self.pushButton_1.clicked.connect(self.insert_data_to_database)
 
         self.pushButton_2 = QtWidgets.QPushButton()
         self.pushButton_2.setText('>>')
@@ -85,14 +91,95 @@ class MainView(QtWidgets.QWidget):
         for item in listitems:
             self.listView.takeItem(self.listView.row(item))
 
+    def insert_data_to_database(self):
+        # ip = socket.gethostbyname_ex(socket.gethostname())[2]
+        # print(ip)
+        shared_mode = 1
+        username = getpass.getuser()
+        ip = '127.0.0.1'
+        status = 0
+
+        for index in range(self.listView.count()):
+            object_id = self.get_data_for_auto(self.listView.item(index).text())[0]
+            if self.check_dublicate(object_id):
+                print('найден дубликат', self.listView.item(index).text())
+            else:
+                self.insert_data(shared_mode, username, ip, status, object_id)
+        self.listView.clear()
+
+
     def on_clicked(self):
-        pass
+        ark = []
+        for index in range(self.listView.count()):
+            ark.append(self.listView.takeItem(0).text())
+        self.send_data(ark)
+
+    def send_data(self, message):
+        self.tcp_socket = socket(AF_INET, SOCK_STREAM)
+        self.tcp_socket.connect(('127.0.0.1', 8888))
+        message = pickle.dumps(message)
+        print(message)
+        self.tcp_socket.send(message)
+        print('сообщение отправлено')
+        respons = self.tcp_socket.recv(1024)
+        print(pickle.loads(respons))
+        self.tcp_socket.close()
+
+    async def tcp_echo_client(self, message):
+        self.reader, self.writer = await asyncio.open_connection(
+            '127.0.0.1', 8888)
+        message = pickle.dumps(message)
+        self.writer.write(message)
+        await self.writer.drain()
+        print(f'Send: {message!r}')
+
+        data = await self.reader.read()
+        print(f'Received: {pickle.loads(data)!r}')
+
+        print('Close the connection')
+        # self.writer.close()
+        # await self.writer.wait_closed()
 
 
-class TreeModel(QtGui.QStandardItemModel, MyQSqlDatabase):
+class TreeModel(QtGui.QStandardItemModel, QtSql.QSqlDatabase):
     def __init__(self):
         QtGui.QStandardItemModel.__init__(self)
-        MyQSqlDatabase.__init__(self)
+        QtSql.QSqlDatabase.__init__(self)
+        self.treedb = self.addDatabase('QMYSQL', 'TreeData')
+        self.treedb.setHostName('localhost')
+        self.treedb.setDatabaseName('autoexchange')
+        self.treedb.setUserName('d.dikiy')
+        self.treedb.setPassword('Rhjyjc2910')
+        if not self.treedb.open():
+            print('Нет подключения к бд')
+        else:
+            print('подключение для дерева успешно выполнено')
+
+    def get_obj_name(self, param):
+        query = QtSql.QSqlQuery()
+        lst = []
+        query.exec(
+            f'SELECT ExchangeData_ObjName FROM exchangedata WHERE objectclass_id = (SELECT objectclass_id FROM objectclass WHERE ObjectClass_Name = "{param}")')
+        if query.isActive():
+            query.first()
+            while query.isValid():
+                lst.append(query.value('ExchangeData_ObjName'))
+                query.next()
+        else:
+            print('Нет конекта')
+
+        return lst
+
+    def get_obj_class_name(self):
+        query = QtSql.QSqlQuery()
+        lst = []
+        query.exec_('SELECT ObjectClass_Name FROM objectclass')
+        if query.isActive():
+            query.first()
+            while query.isValid():
+                lst.append(query.value('ObjectClass_Name'))
+                query.next()
+        return lst
 
     def add_data(self):
         sti = QtGui.QStandardItemModel()
@@ -103,7 +190,11 @@ class TreeModel(QtGui.QStandardItemModel, MyQSqlDatabase):
                 item = QtGui.QStandardItem(q)
                 root_item.appendRow(item)
             sti.appendRow([root_item])
+        self.treedb.close()
         return sti
+
+    def close(self):
+        self.removeDatabase('TreeData')
 
 
 class MyListWidget(QtWidgets.QListWidget):
