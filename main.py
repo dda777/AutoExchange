@@ -1,9 +1,12 @@
 # -*- coding: cp1251 -*-
-from data.bd import MyQSqlDatabase
-from PyQt5 import QtCore, QtWidgets
-from view.main import Ui_MainWindow
+import pickle
+import socket
 import sys
-import getpass, socket
+
+from PyQt5 import QtCore, QtWidgets
+
+from data.bd import MyQSqlDatabase
+from view.main import Ui_MainWindow
 
 
 class MainView(MyQSqlDatabase, QtWidgets.QMainWindow):
@@ -56,28 +59,27 @@ class MainView(MyQSqlDatabase, QtWidgets.QMainWindow):
         for item in listitems:
             self.ui.listWidget.takeItem(self.ui.listWidget.row(item))
 
-    def insert_data_to_database(self):
-
-        shared_mode = 1
-        username = getpass.getuser()
-        ip = '127.0.0.1'
-        status = 0
-
-        for index in range(self.ui.listWidget.count()):
-            object_id = self.get_data_for_auto(self.ui.listWidget.item(index).text())[0]
-            if self.check_dublicate(object_id):
-                print('найден дубликат', self.ui.listWidget.item(index).text())
-            else:
-                self.insert_data(shared_mode, username, ip, status, object_id)
-        self.ui.listWidget.clear()
-
     def on_clicked(self):
-        ip = socket.gethostbyname_ex(socket.gethostname())[2]
-        print(ip)
+        self.send_data('nhfnhf')
         # ark = []
         # for index in range(self.ui.listWidget.count()):
         #     ark.append(self.ui.listWidget.takeItem(0).text())
         # self.send_data(ark)
+
+    def send_data(self, message):
+        try:
+            self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.tcp_socket.connect(('127.0.0.1', 8888))
+            message = pickle.dumps(message)
+            self.tcp_socket.send(message)
+            if self.tcp_socket.recv(1024):
+                print('is str')
+                self.tcp_socket.close()
+
+        except ConnectionRefusedError:
+            print('ошибка подключения')
+            return
+
 
 
 app = QtWidgets.QApplication(sys.argv)
