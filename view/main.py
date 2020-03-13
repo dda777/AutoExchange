@@ -83,11 +83,8 @@ class TreeModel(QtGui.QStandardItemModel, QtSql.QSqlDatabase):
     def __init__(self):
         QtGui.QStandardItemModel.__init__(self)
         QtSql.QSqlDatabase.__init__(self)
-        self.treedb = self.addDatabase('QMYSQL', 'TreeData')
-        self.treedb.setHostName('localhost')
-        self.treedb.setDatabaseName('autoexchange')
-        self.treedb.setUserName('d.dikiy')
-        self.treedb.setPassword('Rhjyjc2910')
+        self.treedb = self.addDatabase('QODBC', 'TreeData')
+        self.treedb.setDatabaseName('DRIVER={SQL Server}; SERVER=172.16.9.115; DATABASE=SUPPDB; UID=adm; PWD=nhfycajhvfnjh')
         if not self.treedb.open():
             print('Нет подключения к бд')
         else:
@@ -97,7 +94,7 @@ class TreeModel(QtGui.QStandardItemModel, QtSql.QSqlDatabase):
         query = QtSql.QSqlQuery()
         lst = []
         query.exec(
-            f'SELECT ExchangeData_ObjName FROM exchangedata WHERE objectclass_id = (SELECT objectclass_id FROM objectclass WHERE ObjectClass_Name = "{param}")')
+            f"SELECT ExchangeData_ObjName FROM SUPPDB.dbo.exchangedata WHERE objectclass_id = (SELECT objectclass_id FROM SUPPDB.dbo.objectclass WHERE ObjectClass_Name = '{param}')")
         if query.isActive():
             query.first()
             while query.isValid():
@@ -111,7 +108,7 @@ class TreeModel(QtGui.QStandardItemModel, QtSql.QSqlDatabase):
     def get_obj_class_name(self):
         query = QtSql.QSqlQuery()
         lst = []
-        query.exec_('SELECT ObjectClass_Name FROM objectclass')
+        query.exec_('SELECT ObjectClass_Name FROM SUPPDB.dbo.objectclass')
         if query.isActive():
             query.first()
             while query.isValid():

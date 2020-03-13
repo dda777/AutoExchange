@@ -5,11 +5,8 @@ from PyQt5.QtCore import QDateTime, Qt
 class MyQSqlDatabase(QtSql.QSqlDatabase):
     def __init__(self):
         QtSql.QSqlDatabase.__init__(self)
-        self.conn = self.addDatabase('QMYSQL')
-        self.conn.setHostName('localhost')
-        self.conn.setDatabaseName('autoexchange')
-        self.conn.setUserName('d.dikiy')
-        self.conn.setPassword('Rhjyjc2910')
+        self.conn = self.addDatabase('QODBC')
+        self.conn.setDatabaseName('DRIVER={SQL Server}; SERVER=172.16.9.115; DATABASE=SUPPDB; UID=adm; PWD=nhfycajhvfnjh')
         if not self.conn.open():
             print('Нет подключения к бд')
         else:
@@ -19,7 +16,7 @@ class MyQSqlDatabase(QtSql.QSqlDatabase):
         self.query = QtSql.QSqlQuery()
         lst = []
         self.query.exec(
-            f'SELECT ExchangeData_ID FROM exchangedata Where ExchangeData_ObjName IN ("{magname}")')
+            f"SELECT ExchangeData_ID FROM SUPPDB.dbo.exchangedata Where ExchangeData_ObjName IN ('{magname}')")
         if self.query.isActive():
             self.query.first()
             while self.query.isValid():
@@ -30,20 +27,19 @@ class MyQSqlDatabase(QtSql.QSqlDatabase):
 
     def check_dublicate(self, id):
         self.query = QtSql.QSqlQuery()
-        self.query.exec(f'SELECT EXISTS(SELECT ExchangeOperation_Id FROM exchangeoperation WHERE ExchangeOperation_Status = 0 AND ExchangeData_ID = {id})')
+        self.query.exec(f"SELECT CASE WHEN EXISTS (SELECT TOP (1) 1 FROM SUPPDB.dbo.exchangeoperation WHERE [ExchangeOperation_Status] = 0 AND ExchangeData_ID= {id}) THEN 1 ELSE 0 END")
         self.query.first()
         if self.query.value(0) == 0:
-            return False
-        else:
             return True
+        else:
+            return False
 
 
     def insert_data(self, shared_mode, username, ip, status, object_id):
         self.query = QtSql.QSqlQuery()
         now = QDateTime.currentDateTime().toString(Qt.ISODate)
         self.query.prepare(
-            f'insert into exchangeoperation (ExchangeOperation_SharedMode, ExchangeOperation_UserName, ExchangeOperation_Ip, ExchangeOperation_Status, ExchangeData_ID, ExchangeOperation_DateTimeCreate) '
-            f'values({shared_mode},"{username}", "{ip}", {status}, {object_id}, "{now}")')
+            f"INSERT INTO SUPPDB.dbo.exchangeoperation( ExchangeOperation_SharedMode, ExchangeOperation_UserName, ExchangeOperation_Ip, ExchangeOperation_Status, ExchangeData_ID, ExchangeOperation_DateTimeCreate) VALUES({shared_mode},'{username}', '{ip}', {status}, {object_id}, '{now}')")
         if not self.query.exec_():
             print('инсерт не прошел')
         else:
@@ -57,3 +53,4 @@ class MyQSqlDatabase(QtSql.QSqlDatabase):
 # ip = '127.0.0.1'
 # status = 0
 # q.insert_data(shared_mode,username,ip,status,1)
+q = MyQSqlDatabase()

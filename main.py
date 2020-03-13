@@ -16,7 +16,6 @@ class MainView(MyQSqlDatabase, QtWidgets.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.ui.pushButton.clicked.connect(self.on_clicked)
-        #self.ui.pushButton.clicked.connect(self.insert_data_to_database)
         self.ui.pushButton_2.clicked.connect(self.on_clicked_add)
         self.ui.pushButton_3.clicked.connect(self.on_clicked_del)
 
@@ -60,22 +59,20 @@ class MainView(MyQSqlDatabase, QtWidgets.QMainWindow):
             self.ui.listWidget.takeItem(self.ui.listWidget.row(item))
 
     def on_clicked(self):
-        self.send_data('nhfnhf')
-        # ark = []
-        # for index in range(self.ui.listWidget.count()):
-        #     ark.append(self.ui.listWidget.takeItem(0).text())
-        # self.send_data(ark)
+        ark = []
+        for index in range(self.ui.listWidget.count()):
+            ark.append(self.ui.listWidget.takeItem(0).text())
+        self.send_data(ark)
 
     def send_data(self, message):
         try:
             self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.tcp_socket.connect(('127.0.0.1', 8888))
+            self.tcp_socket.connect(('10.88.2.54', 8888))
             message = pickle.dumps(message)
             self.tcp_socket.send(message)
             if self.tcp_socket.recv(1024):
                 print('is str')
                 self.tcp_socket.close()
-
         except ConnectionRefusedError:
             print('ошибка подключения')
             return
