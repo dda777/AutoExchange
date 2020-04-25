@@ -1,23 +1,36 @@
 # -*- coding: cp1251 -*-
-import pickle
-import socket
 import sys
+import socket
+import uuid
 
-from PyQt5 import QtCore, QtWidgets
+
+from PyQt5 import QtCore, QtWidgets, Qt
 
 from data.bd import MyQSqlDatabase
 from view.main import Ui_MainWindow
 
 
-class MainView(MyQSqlDatabase, QtWidgets.QMainWindow):
+class MainView(QtWidgets.QMainWindow):
     def __init__(self):
         QtWidgets.QMainWindow.__init__(self)
-        MyQSqlDatabase.__init__(self)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.ui.pushButton.clicked.connect(self.on_clicked)
         self.ui.pushButton_2.clicked.connect(self.on_clicked_add)
         self.ui.pushButton_3.clicked.connect(self.on_clicked_del)
+        self.info_connect = MyQSqlDatabase('info_connect')
+        self.ui.tableView.setModel(self.info_connect.select_data_model())
+        self.timer = QtCore.QTimer()
+        self.timer.start(5000)
+        self.timer.timeout.connect(self.set_model)
+        # self.thread = DbThread()
+        # self.thread.start()
+
+    def set_model(self):
+        self.info_connect_update = MyQSqlDatabase('info_connect_update')
+        model = self.info_connect_update.select_data_model()
+        self.ui.tableView.setModel(model)
+
 
     def on_clicked_add(self):
         if self.ui.treeView.selectedIndexes():
@@ -59,23 +72,32 @@ class MainView(MyQSqlDatabase, QtWidgets.QMainWindow):
             self.ui.listWidget.takeItem(self.ui.listWidget.row(item))
 
     def on_clicked(self):
-        ark = []
+        HOST, PORT = "localhost", 8887
+        hash_key = uuid.uuid4().hex
+        names = []
         for index in range(self.ui.listWidget.count()):
-            ark.append(self.ui.listWidget.takeItem(0).text())
-        self.send_data(ark)
-
-    def send_data(self, message):
-        try:
-            self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.tcp_socket.connect(('10.88.2.54', 8888))
-            message = pickle.dumps(message)
-            self.tcp_socket.send(message)
-            if self.tcp_socket.recv(1024):
-                print('is str')
-                self.tcp_socket.close()
-        except ConnectionRefusedError:
-            print('ошибка подключения')
+            names.append(self.ui.listWidget.takeItem(0).text())
+        if not names:
+            print('ошибка')
             return
+        db = MyQSqlDatabase('Conn1')
+        db.insert_operations(names, hash_key)
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            # Connect to server and send data
+            sock.connect((HOST, PORT))
+            sock.sendall(bytes(hash_key, "utf-8"))
+
+
+
+class DbThread(Qt.QThread):
+    def __init__(self):
+        super().__init__()
+        self.info_connect_update = MyQSqlDatabase('info_connect_update')
+
+    def run(self, *args, **kwargs):
+        while True:
+            Qt.QThread.msleep(2000)
+            model = self.info_connect_update.select_data_model()
 
 
 

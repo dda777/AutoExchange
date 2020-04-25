@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 from PyQt5 import QtCore, QtWidgets, QtGui, QtSql
+from PyQt5.QtCore import Qt
+from data.bd import MyQSqlDatabase
 
 
 class Ui_MainWindow(object):
@@ -50,10 +52,16 @@ class Ui_MainWindow(object):
         self.listWidget = MyListWidget()
 
         self.horizontalLayout.addWidget(self.listWidget)
+
         self.tableView = QtWidgets.QTableView(self.centralwidget)
         self.tableView.setGeometry(QtCore.QRect(10, 560, 931, 241))
         self.tableView.setContextMenuPolicy(QtCore.Qt.DefaultContextMenu)
         self.tableView.setObjectName("tableView")
+        self.tableView.verticalHeader().setVisible(False)
+        self.tableView.horizontalHeader().setStretchLastSection(True)
+        self.tableView.horizontalHeader().setDefaultSectionSize(150)
+        self.tableView.setSortingEnabled(True)
+
         self.checkBox = QtWidgets.QCheckBox(self.centralwidget)
         self.checkBox.setGeometry(QtCore.QRect(780, 300, 121, 23))
         self.checkBox.setObjectName("checkBox")
@@ -79,57 +87,29 @@ class Ui_MainWindow(object):
         self.pushButton_2.setText(_translate("MainWindow", ">>"))
         self.checkBox.setText(_translate("MainWindow", "Монопольно?"))
 
-class TreeModel(QtGui.QStandardItemModel, QtSql.QSqlDatabase):
+
+
+
+class TreeModel(QtGui.QStandardItemModel):
     def __init__(self):
         QtGui.QStandardItemModel.__init__(self)
-        QtSql.QSqlDatabase.__init__(self)
-        self.treedb = self.addDatabase('QODBC', 'TreeData')
-        self.treedb.setDatabaseName('DRIVER={SQL Server}; SERVER=172.16.9.115; DATABASE=SUPPDB; UID=adm; PWD=nhfycajhvfnjh')
-        if not self.treedb.open():
-            print('Нет подключения к бд')
-        else:
-            print('подключение для дерева успешно выполнено')
-
-    def get_obj_name(self, param):
-        query = QtSql.QSqlQuery()
-        lst = []
-        query.exec(
-            f"SELECT ExchangeData_ObjName FROM SUPPDB.dbo.exchangedata WHERE objectclass_id = (SELECT objectclass_id FROM SUPPDB.dbo.objectclass WHERE ObjectClass_Name = '{param}')")
-        if query.isActive():
-            query.first()
-            while query.isValid():
-                lst.append(query.value('ExchangeData_ObjName'))
-                query.next()
-        else:
-            print('Нет конекта')
-
-        return lst
-
-    def get_obj_class_name(self):
-        query = QtSql.QSqlQuery()
-        lst = []
-        query.exec_('SELECT ObjectClass_Name FROM SUPPDB.dbo.objectclass')
-        if query.isActive():
-            query.first()
-            while query.isValid():
-                lst.append(query.value('ObjectClass_Name'))
-                query.next()
-        return lst
+        self.db = MyQSqlDatabase('conn2')
 
     def add_data(self):
+        region = self.db.get_region_name()
+        enterprise = self.db.get_enterprise_name()
         sti = QtGui.QStandardItemModel()
-        for i in self.get_obj_class_name():
-            root_item = QtGui.QStandardItem(i)
+        for i in region:
+            root_item = QtGui.QStandardItem(i[0])
             root_item.setFlags(root_item.flags() & ~QtCore.Qt.ItemIsDragEnabled & ~QtCore.Qt.ItemIsDropEnabled)
-            for q in self.get_obj_name(i):
-                item = QtGui.QStandardItem(q)
-                root_item.appendRow(item)
+            for q in enterprise:
+                if q[1] == i[1]:
+                    item = QtGui.QStandardItem(q[0])
+
+                    root_item.appendRow(item)
             sti.appendRow([root_item])
-        self.treedb.close()
         return sti
 
-    def close(self):
-        self.removeDatabase('TreeData')
 
 class MyListWidget(QtWidgets.QListWidget):
     def __init__(self):

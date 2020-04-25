@@ -1,51 +1,92 @@
 from PyQt5 import QtSql, QtCore
-from PyQt5.QtCore import QDateTime, Qt
 
 
 class MyQSqlDatabase(QtSql.QSqlDatabase):
-    def __init__(self):
+    def __init__(self, conn):
         QtSql.QSqlDatabase.__init__(self)
-        self.conn = self.addDatabase('QODBC')
-        self.conn.setDatabaseName('DRIVER={SQL Server}; SERVER=172.16.9.115; DATABASE=SUPPDB; UID=adm; PWD=nhfycajhvfnjh')
-        if not self.conn.open():
-            print('Нет подключения к бд')
+        if QtSql.QSqlDatabase.contains(conn):
+            QtSql.QSqlDatabase.removeDatabase(conn)
+        self.db = self.addDatabase('QODBC', conn)
+        self.db.setDatabaseName(
+            'DRIVER={SQL Server}; SERVER=HOMEDES001\SQLEXPRESS; DATABASE=autoexchange; UID=d.dikiy; PWD=Rhjyjc2910')
+
+    #
+    # Добавляем данные об операции в бд, enterprise_data_id , shared_mode, user_id
+    #
+
+    def insert_operations(self, enterprise_names, hash_key, operation_shared_mode=1, user_id=1):
+        if not self.db.open():
+            return print('Нет подключения к бд')
         else:
-            print('Подключение установлено')
+            print('Подключено')
 
-    def get_data_for_auto(self, magname):
-        self.query = QtSql.QSqlQuery()
+        query = QtSql.QSqlQuery(self.db)
+        query.prepare('{CALL dbo.insert_operations(?, ?, ?)}')
+        query.bindValue(0, operation_shared_mode)
+        query.bindValue(1, user_id)
+        query.bindValue(2, hash_key)
+        query.exec()
+        query.finish()
+        for name in enterprise_names:
+            query.prepare('{CALL dbo.insert_suboperation(?, ?)}')
+            query.bindValue(0, hash_key)
+            query.bindValue(1, name)
+            query.exec()
+            query.finish()
+        self.db.close()
+
+    #
+    # Получаем имя магазина и id региона из view get_enterprise_name, все отсортировано по Region_ID
+    #
+
+    def get_enterprise_name(self):
+        if not self.db.open():
+            return print('Нет подключения к бд')
+        else:
+            print('Подключено')
+        query = QtSql.QSqlQuery(self.db)
         lst = []
-        self.query.exec(
-            f"SELECT ExchangeData_ID FROM SUPPDB.dbo.exchangedata Where ExchangeData_ObjName IN ('{magname}')")
-        if self.query.isActive():
-            self.query.first()
-            while self.query.isValid():
-                lst.append(self.query.value('ExchangeData_ID'))
-                self.query.next()
-
+        query.exec('SELECT * FROM dbo.get_enterprise_name')
+        if query.isActive():
+            query.first()
+            while query.isValid():
+                lst.append([query.value('Name'), query.value('ID')])
+                query.next()
+        self.db.close()
         return lst
 
-    def check_dublicate(self, id):
-        self.query = QtSql.QSqlQuery()
-        self.query.exec(f"SELECT CASE WHEN EXISTS (SELECT TOP (1) 1 FROM SUPPDB.dbo.exchangeoperation WHERE [ExchangeOperation_Status] = 0 AND ExchangeData_ID= {id}) THEN 1 ELSE 0 END")
-        self.query.first()
-        if self.query.value(0) == 0:
-            return True
+    #
+    # Получаем имя региона и id региона из view get_region_name, все отсортировано по Region_ID
+    #
+
+    def get_region_name(self):
+        if not self.db.open():
+            print('Нет подключения к бд')
         else:
-            return False
+            print('Подключено')
+        query = QtSql.QSqlQuery(self.db)
+        lst = []
+        query.exec_('SELECT * FROM dbo.get_region_name')
+        if query.isActive():
+            query.first()
+            while query.isValid():
+                lst.append([query.value('Name'), query.value('ID')])
+                query.next()
+        self.db.close()
+        return lst
 
-
-    def insert_data(self, shared_mode, username, ip, status, object_id):
-        self.query = QtSql.QSqlQuery()
-        now = QDateTime.currentDateTime().toString(Qt.ISODate)
-        self.query.prepare(
-            f"INSERT INTO SUPPDB.dbo.exchangeoperation( ExchangeOperation_SharedMode, ExchangeOperation_UserName, ExchangeOperation_Ip, ExchangeOperation_Status, ExchangeData_ID, ExchangeOperation_DateTimeCreate) VALUES({shared_mode},'{username}', '{ip}', {status}, {object_id}, '{now}')")
-        if not self.query.exec_():
-            print('инсерт не прошел')
+    def select_data_model(self):
+        if not self.db.open():
+            return print('Нет подключения к бд')
         else:
-            print('инсерт выполнен')
-
-
+            print('Подключено')
+        query = QtSql.QSqlQuery(self.db)
+        query.prepare('SELECT * FROM dbo.operation_info')
+        query.exec()
+        model = QtSql.QSqlQueryModel()
+        model.setQuery(query)
+        # model.select()
+        return model
 
 # now = QDateTime.currentDateTime().toString(Qt.ISODate)
 # shared_mode = 1
@@ -53,4 +94,3 @@ class MyQSqlDatabase(QtSql.QSqlDatabase):
 # ip = '127.0.0.1'
 # status = 0
 # q.insert_data(shared_mode,username,ip,status,1)
-q = MyQSqlDatabase()
