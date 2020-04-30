@@ -17,9 +17,6 @@ class MyQSqlDatabase(QtSql.QSqlDatabase):
     def insert_operations(self, enterprise_names, hash_key, operation_shared_mode=1, user_id=1):
         if not self.db.open():
             return print('Нет подключения к бд')
-        else:
-            print('Подключено')
-
         query = QtSql.QSqlQuery(self.db)
         query.prepare('{CALL dbo.insert_operations(?, ?, ?)}')
         query.bindValue(0, operation_shared_mode)
@@ -27,6 +24,7 @@ class MyQSqlDatabase(QtSql.QSqlDatabase):
         query.bindValue(2, hash_key)
         query.exec()
         query.finish()
+        print('query ok')
         for name in enterprise_names:
             query.prepare('{CALL dbo.insert_suboperation(?, ?)}')
             query.bindValue(0, hash_key)
@@ -42,8 +40,7 @@ class MyQSqlDatabase(QtSql.QSqlDatabase):
     def get_enterprise_name(self):
         if not self.db.open():
             return print('Нет подключения к бд')
-        else:
-            print('Подключено')
+
         query = QtSql.QSqlQuery(self.db)
         lst = []
         query.exec('SELECT * FROM dbo.get_enterprise_name')
@@ -62,8 +59,7 @@ class MyQSqlDatabase(QtSql.QSqlDatabase):
     def get_region_name(self):
         if not self.db.open():
             print('Нет подключения к бд')
-        else:
-            print('Подключено')
+
         query = QtSql.QSqlQuery(self.db)
         lst = []
         query.exec_('SELECT * FROM dbo.get_region_name')
@@ -78,8 +74,6 @@ class MyQSqlDatabase(QtSql.QSqlDatabase):
     def select_data_model(self):
         if not self.db.open():
             return print('Нет подключения к бд')
-        else:
-            print('Подключено')
         query = QtSql.QSqlQuery(self.db)
         query.prepare('SELECT * FROM dbo.operation_info')
         query.exec()
