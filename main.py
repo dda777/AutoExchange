@@ -1,74 +1,121 @@
 # -*- coding: cp1251 -*-
-import sys
+import sys, time
 import socket
 import uuid
 
-from PyQt5 import QtCore, QtWidgets, Qt
+# from PyQt5 import QtCore, QtWidgets, Qt
+from PyQt5.QtSql import QSqlQuery, QSqlQueryModel
 
-from data.bd import MyQSqlDatabase as db
+from data.bd import MyQSqlDatabase as mainDataBase
 from view.main_view import Ui_MainWindow
-from login import DialogWindowLogin
+
+from PyQt5.QtWidgets import QMainWindow, QListWidgetItem, QMessageBox, QApplication, QSplashScreen
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtCore import Qt, QTimer, QModelIndex, QThread, pyqtSignal
+
+import getpass
+from ldap3 import Server, Connection
+
+user_id = None
+# Создаем индикаторы для Splash Screen анимации
+splash_i = 100  # Индикатор текущего кадра SplashScreen
+splash_stop = 0  # Индикатор остановки SplashScreen
+max_i = 180  # Макс. кадр SplashScreen
 
 
-class MainView(QtWidgets.QMainWindow):
+def updateSplashScreen():
+    global splash_i, splash_stop
+
+    # если текущий кадр равен максимальному то тормозим таймер анимации
+    if splash_i == 270:
+        splash_i = 0
+        splash_stop = 1
+    else:  # иначе обновляем кадр на следующий
+        if splash_i < max_i:
+            splash_i = splash_i + 1
+    pixmap = QPixmap('data/splash/splash_' + str(splash_i) + '.png')
+    splashScreen.setPixmap(pixmap)
+
+
+class MainView(QMainWindow):
     def __init__(self):
-        QtWidgets.QMainWindow.__init__(self)
+        global user_id
+        QMainWindow.__init__(self)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self.DialogWindowLogin = DialogWindowLogin()
-        self.DialogWindowLogin.show()
-        self.DialogWindowLogin.exec()
+        self.db = mainDataBase('info_connect_update')
+
+        # self.DialogWindowLogin = DialogWindowLogin()
+        # self.DialogWindowLogin.show()
+        # self.DialogWindowLogin.exec()
 
         self.ui.pushButton.clicked.connect(self.on_clicked)
         self.ui.pushButton_2.clicked.connect(self.on_clicked_add)
         self.ui.pushButton_3.clicked.connect(self.on_clicked_del)
 
-        self.ui.tableView.setModel(db('info_connect').select_data_model())
-
-        self.timer = QtCore.QTimer()
-        self.timer.start(5000)
+        self.set_model()
+        self.timer = QTimer()
         self.timer.timeout.connect(self.set_model)
-        # self.thread = DbThread()
-        # self.thread.start()
+        self.timer.start(5000)
 
     def set_model(self):
-        self.ui.tableView.setModel(db('info_connect_update').select_data_model())
+        if user_id is None:
+            return
+        if not self.db.connect().open():
+            return print('Нет подключения к бд')
+
+        sql = '{CALL dbo.operation_info_for_current_user(' + str(user_id) + ')}'
+
+        query = QSqlQuery(sql, self.db.connect())
+        model = QSqlQueryModel()
+
+        model.setQuery(query)
+        model.setHeaderData(0, Qt.Horizontal, "Пользователь")
+        model.setHeaderData(1, Qt.Horizontal, "IP")
+        model.setHeaderData(2, Qt.Horizontal, "Дата операции")
+        model.setHeaderData(3, Qt.Horizontal, "В ожидании")
+        model.setHeaderData(4, Qt.Horizontal, "В работе")
+        model.setHeaderData(5, Qt.Horizontal, "Выполнено")
+        model.setHeaderData(6, Qt.Horizontal, "Выполнено с ошибкой")
+
+        self.ui.tableView.setModel(model)
+        self.ui.tableView.show()
 
     def on_clicked_add(self):
         duplicate = ''
         if self.ui.treeView.selectedIndexes():
             for i in range(self.ui.treeView.model().rowCount(self.ui.treeView.rootIndex())):
 
-                root = self.ui.treeView.model().index(i, 0, QtCore.QModelIndex())
-                if self.ui.treeView.model().index(i, 0, QtCore.QModelIndex()) in self.ui.treeView.selectedIndexes():
+                root = self.ui.treeView.model().index(i, 0, QModelIndex())
+                if self.ui.treeView.model().index(i, 0, QModelIndex()) in self.ui.treeView.selectedIndexes():
                     for j in range(self.ui.treeView.model().rowCount(root)):
                         text = self.ui.treeView.model().data(self.ui.treeView.model().index(j, 0, root))
-                        if self.ui.listWidget.findItems(text, QtCore.Qt.MatchRecursive):
-                            #duplicate += f'{}'
+                        if self.ui.listWidget.findItems(text, Qt.MatchRecursive):
+                            # duplicate += f'{}'
                             print('эелемент уже есть в списке', duplicate)  # Нужно сделать алерт!
                         else:
-                            self.ui.listWidget.addItem(QtWidgets.QListWidgetItem(text))
+                            self.ui.listWidget.addItem(QListWidgetItem(text))
                 else:
                     for j in range(self.ui.treeView.model().rowCount(root)):
                         if self.ui.treeView.model().index(j, 0, root) in self.ui.treeView.selectedIndexes():
                             text = self.ui.treeView.model().data(self.ui.treeView.model().index(j, 0, root))
-                            if self.ui.listWidget.findItems(text, QtCore.Qt.MatchRecursive):
+                            if self.ui.listWidget.findItems(text, Qt.MatchRecursive):
                                 duplicate += text
                                 print('эелемент уже есть в списке', duplicate)  # Нужно сделать алерт!
                             else:
-                                self.ui.listWidget.addItem(QtWidgets.QListWidgetItem(text))
+                                self.ui.listWidget.addItem(QListWidgetItem(text))
 
         else:
             for i in range(self.ui.treeView.model().rowCount(self.ui.treeView.rootIndex())):
-                root = self.ui.treeView.model().index(i, 0, QtCore.QModelIndex())
+                root = self.ui.treeView.model().index(i, 0, QModelIndex())
                 for j in range(self.ui.treeView.model().rowCount(root)):
                     text = self.ui.treeView.model().data(self.ui.treeView.model().index(j, 0, root))
                     q = self.ui.treeView.model()
                     print(q)
-                    item = QtWidgets.QListWidgetItem(text)
+                    item = QListWidgetItem(text)
 
-                    if self.ui.listWidget.findItems(text, QtCore.Qt.MatchRecursive):
+                    if self.ui.listWidget.findItems(text, Qt.MatchRecursive):
                         print('эелемент уже есть в списке', text)  # Нужно сделать алерт!
                     else:
                         self.ui.listWidget.addItem(item)
@@ -80,10 +127,11 @@ class MainView(QtWidgets.QMainWindow):
             self.ui.listWidget.takeItem(self.ui.listWidget.row(item))
 
     def message_box(self, title, text):
-        return QtWidgets.QMessageBox.about(self, f'{title}', f'{text}')
+        return QMessageBox.about(self, f'{title}', f'{text}')
 
     def on_clicked(self):
-        HOST, PORT = "localhost", 8887
+        global user_id
+        HOST, PORT = "10.88.2.54", 8887
         hash_key = uuid.uuid4().hex
         names = []
 
@@ -97,29 +145,124 @@ class MainView(QtWidgets.QMainWindow):
             # Connect to server and send data
             try:
                 sock.connect((HOST, PORT))
-                db('insert_operation').insert_operations(names, hash_key)
+                mainDataBase('insert_operation').insert_operations(names, hash_key, user_id=user_id)
+                sock.sendall(bytes(hash_key, "utf-8"))
             except socket.error as err:
                 return self.message_box('Ошибка', err.__reduce__()[1][1])
             except:
                 return self.message_box('Ошибка', 'Неизвестная ошибка')
 
-        sock.sendall(bytes(hash_key, "utf-8"))
 
-
-class DbThread(Qt.QThread):
-    def __init__(self):
+class UserData:
+    def __init__(self, user_login):
         super().__init__()
-        self.info_connect_update = db('info_connect_update')
+        self.conn = Connection(Server('dc00.tavriav.local'), 'tavriav\d.dikiy', 'Rhjyjc2910')
+        self.userLogin = user_login
+        self.db_user_conn = mainDataBase('user_insert')
 
-    def run(self, *args, **kwargs):
-        while True:
-            Qt.QThread.msleep(2000)
-            model = self.info_connect_update.select_data_model()
+    def getName(self):
+        self.conn.bind()
+        self.conn.search('dc=tavriav,dc=local', f'(&(objectClass=user)(sAMAccountName={self.userLogin}))',
+                         attributes=['CN'])
+        for name in self.conn.entries[0]:
+            self.conn.unbind()
+            return str(name).split()
+
+    def getIp(self):
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            s.connect(('172.16.7.40', 1))  # connect() for UDP doesn't send packets
+            return s.getsockname()[0]
+        except socket.error:
+            return '127.0.0.1'
+
+    def run(self):
+        global user_id
+
+        ip = self.getIp()
+
+        if self.db_user_conn.check_user_exists(self.userLogin):
+            user_id = self.db_user_conn.get_user_id(self.userLogin)
+            self.db_user_conn.user_log(user_id, ip, 'Вход в программу')
+        else:
+            self.db_user_conn.add_user(self.getName()[1], self.getName()[0], self.userLogin, ip)
+            user_id = self.db_user_conn.get_user_id(self.userLogin)
+            self.db_user_conn.user_log(user_id, ip, 'Пользователь создан')
 
 
+# Поток для определения завершения SplashScreen
+class SplashThread(QThread):
+    mysignal = pyqtSignal(int)  # создаем сигнал, который будет информировать об остановке таймера
+
+    def __init__(self, parent=None):
+        QThread.__init__(self, parent)
+        self.user_login = getpass.getuser()
+        self.process = UserData(self.user_login)
+
+    def run(self):
+        global splash_i, splash_stop, max_i  # подключаем индикаторы
+
+        start_time = time.time()
+        self.process.run()
+        t = round(time.time() - start_time)
+        if t < 3:
+            max_i = 180
+        elif t >= 3:
+            max_i = max_i + 90
+
+        print('loading widgets done')
+
+        start_time = time.time()
+        # time.sleep(2)  # 3 процесс
+        t = round(time.time() - start_time)
+        if t < 3:
+            max_i = 270
+        elif t >= 3:
+            max_i = max_i + 90
+
+        print('loading data done')
+
+        # Ожидаем завершения всей анимации
+        while splash_stop == 0:
+            app.processEvents()
+        if splash_stop == 1:
+            self.mysignal.emit(1)  # отправляем сигнал из потока о том, что надо остановить SplashScreen
 
 
-app = QtWidgets.QApplication(sys.argv)
+# Функция остановки таймера и закрытия SplashScreen окна
+def stopTimer(signal):
+    if signal == 1:
+        timer.stop()  # останавливаем таймер
+        application.show()  # показываем форму
+        splashScreen.finish(application)  # закрываем SplashScreen
+    else:
+        pass
+
+
+app = QApplication(sys.argv)
+
+# Поток для SplashScreen
+SplashThread = SplashThread()
+
+# Создаем splashScreen
+splashScreen = QSplashScreen()
+splashPixmap = QPixmap('data/splash/splash_100.png')
+splashScreen.setPixmap(splashPixmap)
+splashScreen.show()
+
+# Создаем форму приложения
 application = MainView()
-application.show()
-sys.exit(app.exec())
+
+# Создаем таймер для splashScreen
+timer = QTimer()
+timer.setInterval(33.33)
+timer.setSingleShot(False)
+timer.timeout.connect(updateSplashScreen)
+timer.start()
+
+# Коннектимся к потоку
+SplashThread.mysignal.connect(stopTimer)
+# Запускаем поток
+SplashThread.start()
+
+sys.exit(app.exec_())

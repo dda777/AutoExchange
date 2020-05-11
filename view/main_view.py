@@ -55,12 +55,12 @@ class Ui_MainWindow(object):
 
         self.tableView = QtWidgets.QTableView(self.centralwidget)
         self.tableView.setGeometry(QtCore.QRect(10, 560, 931, 241))
-        self.tableView.setContextMenuPolicy(QtCore.Qt.DefaultContextMenu)
+        #self.tableView.setContextMenuPolicy(QtCore.Qt.DefaultContextMenu)
         self.tableView.setObjectName("tableView")
         self.tableView.verticalHeader().setVisible(False)
         self.tableView.horizontalHeader().setStretchLastSection(True)
-        self.tableView.horizontalHeader().setDefaultSectionSize(150)
-        self.tableView.setSortingEnabled(True)
+        self.tableView.horizontalHeader().setDefaultSectionSize(130)
+        #self.tableView.setSortingEnabled(True)
 
         self.checkBox = QtWidgets.QCheckBox(self.centralwidget)
         self.checkBox.setGeometry(QtCore.QRect(780, 300, 121, 23))
